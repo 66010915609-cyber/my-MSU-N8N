@@ -1,0 +1,375 @@
+{
+  "name": "SushiPeak–Daily Sales AutoReport_JSONtemplate",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        416
+      ],
+      "id": "4a66f13b-c621-4efe-a2b3-89bc0499832e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=นี่คือข้อมูลยอดขายประจำวันที่ {{ $json.reportDate }}:\n\n[KPI]\n{{ JSON.stringify($json.kpi, null, 2) }}\n\n[Mix]\n{{ JSON.stringify($json.mix, null, 2) }}\n\n[Branch Summary]\n{{ JSON.stringify($json.branch, null, 2) }}\n\n[Peak Hour]\n{{ JSON.stringify($json.peak, null, 2) }}\n\n[Top Items]\n{{ JSON.stringify($json.top_items, null, 2) }}\n\nงานของคุณ:\n1) Executive Summary: 3–5 bullet ภาษาไทย สั้น กระชับ\n2) KPI Snapshot: แสดงข้อมูลตามตาราง Gross, Net, Orders, Customers, AOV, Items/Order, Refunds, Promo\n3) By Branch: สรุป Branch | Net Sales | Orders | AOV | Peak hour\n4) Channel/Payment/Delivery Summary: bullet สั้นๆ\n5) Top 5 Items: รายชื่อเมนู + ยอดรายได้\n6) Alerts & Actions: วิเคราะห์ anomaly (±15%), refunds สูง, delivery โต ฯลฯ แล้วเสนอ 2–3 ข้อแนะนำ\n\nโทน: มืออาชีพ กระชับ\n\nReturn only valid JSON with schema:\n{\n  \"exec_summary\": [ \"string\", ... ],\n  \"kpi\": [ { \"gross_sales\": number, \"net_sales\": number, \"orders\": number, \"customers\": number, \"aov\": number, \"items_per_order\": number, \"refunds_count\": number, \"refunds_value\": number, \"promo_redemptions\": number, \"promo_discount_value\": number } ],\n  \"by_branch\": [ { \"branch\": \"string\", \"net_sales\": number, \"orders\": number, \"aov\": number, \"peak_hour\": \"string\" }, ... ],\n  \"mix\": { \"channel_sales\": {...}, \"payment_sales\": {...}, \"delivery_sales\": {...} },\n  \"top_items\": [ { \"name\": \"string\", \"revenue\": number }, ... ],\n  \"alerts\": [ \"string\", ... ]\n}\n",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=System:\nคุณคือผู้ช่วยวิเคราะห์ยอดขายร้านอาหาร (ซูชิ 10 สาขาในกรุงเทพ)\nอย่า “คำนวณตัวเลขใหม่” ให้ใช้ตัวเลขจากอินพุตเท่านั้น\nเขียนเป็นภาษาไทย กระชับ อ่านง่ายแบบผู้บริหาร\n\nUser:\nนี่คือผลรวมรายวันของวันที่ {{ $json.reportDate }}:\n{{ $json }}\n\nงานของคุณ:\n1) Executive Summary: 3–5 bullet สั้นๆ\n2) KPI Snapshot: ตารางเล็ก (Gross, Net, Orders, Customers, AOV, Items/Order, Refunds, Promo)\n3) By Branch: ตาราง Branch | Net Sales | Orders | AOV | Peak hour\n4) Channel/Payment/Delivery summary (bullet)\n5) Alerts & Actions: anomal(±15%), refundsสูง, deliveryโต แนะนำ 2–3 ข้อ\n\nโทน: มืออาชีพ กระชับ ไม่ต้องใส่โค้ด\n\nReturn only valid JSON with this schema:\n{\n  \"exec_summary\": [ \"string\", ... ],\n  \"kpi\": [ { \"gross_sales\": number, \"net_sales\": number, \"orders\": number, \"customers\": number, \"aov\": number, \"items_per_order\": number, \"refunds_count\": number, \"refunds_value\": number, \"promo_redemptions\": number, \"promo_discount_value\": number } ],\n  \"by_branch\": [ { \"branch\": \"string\", \"net_sales\": number, \"orders\": number, \"aov\": number, \"peak_hour\": \"string\" }, ... ],\n  \"mix\": { \"channel_sales\": {...}, \"payment_sales\": {...}, \"delivery_sales\": {...} },\n  \"alerts\": [ \"string\", ... ]\n}\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        512,
+        416
+      ],
+      "id": "9712e5cf-94e2-4433-aec2-6bffd8d8a298",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        560
+      ],
+      "id": "50405df1-5fd3-43bc-945b-e52a17222388",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "28LXl50ZdQjnkMJs",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"exec_summary\": [\n    \"ยอดขายสุทธิรวม 339,260 บาท จาก 1,051 ออเดอร์ ลูกค้า 1,490 คน\",\n    \"สาขา Sushi Peak #10 ทำยอดขายสูงสุด 51,397 บาท\"\n  ],\n  \"kpi\": [\n    { \"gross_sales\": 301800, \"net_sales\": 339260, \"orders\": 1051, \"customers\": 1490, \"aov\": 323, \"items_per_order\": 3.6, \"refunds_count\": 8, \"refunds_value\": 3112, \"promo_redemptions\": 425, \"promo_discount_value\": 7296 }\n  ],\n  \"by_branch\": [\n    { \"branch\": \"Sushi Peak #1\", \"net_sales\": 27921, \"orders\": 74, \"aov\": 377, \"peak_hour\": \"18:00\" },\n    { \"branch\": \"Sushi Peak #2\", \"net_sales\": 25820, \"orders\": 82, \"aov\": 315, \"peak_hour\": \"\" }\n  ],\n  \"mix\": {\n    \"channel_sales\": { \"dine_in\": 205755, \"takeaway\": 58914, \"delivery\": 74592 },\n    \"payment_sales\": { \"cash\": 82476, \"credit_card\": 187534, \"qr\": 69251 },\n    \"delivery_sales\": { \"Grab\": 35495, \"LINE MAN\": 27305, \"Robinhood\": 11792 }\n  },\n    \"alerts\": [\n    \"ไม่มีความผิดปกติของยอดขายเกิน ±15%\",\n    \"Refunds ต่ำ (3112 บาท) แต่ควรตรวจสอบสาเหตุ\",\n    \"ยอดขาย Grab สูงสุด → เสนอทำโปรโมชั่นเสริม\"\n  ]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        656,
+        544
+      ],
+      "id": "adf68018-3ccc-4380-a426-65f23996786f",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "sendTo": "=<Your email>",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1072,
+        416
+      ],
+      "id": "4e6d69d2-190b-48ba-9533-634f062ceab2",
+      "name": "Send a message",
+      "webhookId": "316cb6d0-8a53-472e-9a9f-5322dac02a5c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9aE5MxkXfpcZr7j4",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $json.TAB_ORDERS }}",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "order_date",
+              "lookupValue": "={{$today.toFormat('d/L/yyyy') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        80,
+        416
+      ],
+      "id": "79374295-9efd-4c57-bf43-30daea0e5de0",
+      "name": "Read_orders",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "0RVWjnYzlWor2bMu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/push",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "=json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={\n  \"to\": \"<Your line user id>\",\n  \"messages\": [\n    {\n      \"type\": \"flex\",\n      \"altText\": \"สรุปยอดขาย {{$today.toFormat('d-LL-yyyy')}}\",\n      \"contents\": {\n        \"type\": \"bubble\",\n        \"size\": \"giga\",\n        \"header\": {\n          \"type\": \"box\",\n          \"layout\": \"vertical\",\n          \"contents\": [\n            { \"type\": \"text\", \"text\": \"สรุปยอดขายรายวัน\", \"weight\": \"bold\", \"size\": \"lg\" },\n            { \"type\": \"text\", \"text\": \"Sushi Peak\", \"size\": \"sm\", \"color\": \"#666666\" },\n            { \"type\": \"text\", \"text\": \"วันที่ {{$today.toFormat('d-LL-yyyy')}}\", \"size\": \"xs\", \"color\": \"#999999\" }\n          ]\n        },\n        \"body\": {\n          \"type\": \"box\",\n          \"layout\": \"vertical\",\n          \"spacing\": \"md\",\n          \"contents\": [\n            {\n              \"type\": \"box\",\n              \"layout\": \"baseline\",\n              \"contents\": [\n                { \"type\": \"text\", \"text\": \"ยอดขายสุทธิ\", \"size\": \"sm\", \"color\": \"#555555\", \"flex\": 2 },\n                { \"type\": \"text\", \"text\": \"{{$json.output.kpi[0].net_sales}} บ.\", \"weight\": \"bold\", \"size\": \"sm\", \"color\": \"#111111\", \"flex\": 3 }\n              ]\n            },\n            {\n              \"type\": \"box\",\n              \"layout\": \"baseline\",\n              \"contents\": [\n                { \"type\": \"text\", \"text\": \"ออร์เดอร์\", \"size\": \"sm\", \"color\": \"#555555\", \"flex\": 2 },\n                { \"type\": \"text\", \"text\": \"{{$json.output.kpi[0].orders}}\", \"weight\": \"bold\", \"size\": \"sm\", \"color\": \"#111111\", \"flex\": 3 }\n              ]\n            },\n            {\n              \"type\": \"box\",\n              \"layout\": \"baseline\",\n              \"contents\": [\n                { \"type\": \"text\", \"text\": \"ลูกค้า\", \"size\": \"sm\", \"color\": \"#555555\", \"flex\": 2 },\n                { \"type\": \"text\", \"text\": \"{{$json.output.kpi[0].customers}}\", \"weight\": \"bold\", \"size\": \"sm\", \"color\": \"#111111\", \"flex\": 3 }\n              ]\n            },\n            { \"type\": \"separator\" },\n            {\n              \"type\": \"box\",\n              \"layout\": \"vertical\",\n              \"margin\": \"md\",\n              \"contents\": [\n                { \"type\": \"text\", \"text\": \"Executive Summary\", \"weight\": \"bold\", \"size\": \"md\" },\n                { \"type\": \"text\", \"text\": \"• {{$json.output.exec_summary[0]}}\" },\n                { \"type\": \"text\", \"text\": \"• {{$json.output.exec_summary[1]}}\" },\n                { \"type\": \"text\", \"text\": \"• {{$json.output.exec_summary[2]}}\" }\n              ]\n            },\n            { \"type\": \"separator\" },\n            {\n              \"type\": \"box\",\n              \"layout\": \"vertical\",\n              \"margin\": \"md\",\n              \"contents\": [\n                { \"type\": \"text\", \"text\": \"Alerts\", \"weight\": \"bold\", \"size\": \"md\" },\n                { \"type\": \"text\", \"text\": \"• {{$json.output.alerts[0]}}\" },\n                { \"type\": \"text\", \"text\": \"• {{$json.output.alerts[1]}}\" },\n                { \"type\": \"text\", \"text\": \"• {{$json.output.alerts[2]}}\" }\n              ]\n            }\n          ]\n        },\n        \"styles\": { \"header\": { \"backgroundColor\": \"#f3f5f9\" } }\n      }\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        864,
+        592
+      ],
+      "id": "7f8c505d-a731-47a9-883e-4ec653083020",
+      "name": "Push message to Line",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "byY3kI23lMe4ewnM",
+          "name": "Header Auth account - Maid"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// === ใช้ dataset enriched_orders เพียงอย่างเดียว ===\nconst ORD = $items('Read_orders').map(i => i.json);\n\n// เลือกวันที่สรุป: ใช้วันที่ล่าสุดที่มี\nconst allDates = [...new Set(ORD.map(r => r.order_date))].sort();\nconst reportDate = allDates[allDates.length - 1];  // ex. \"2025-09-27\"\n\n// กรองเฉพาะออเดอร์ของวันนั้น\nconst df = ORD.filter(r => r.order_date === reportDate);\nconst num = (v) => Number(String(v).replace(/,/g,'')) || 0;\n\n// --- KPIs ---\nconst gross = df.reduce((s,r)=> s + num(r.subtotal), 0);\nconst net   = df.reduce((s,r)=> s + num(r.total), 0);\nconst ordersCount = df.length;\nconst customers   = df.reduce((s,r)=> s + num(r.customers), 0);\nconst refundsCount = df.filter(r => num(r.refund_amount) > 0).length;\nconst refundsValue = df.reduce((s,r)=> s + num(r.refund_amount), 0);\nconst promoRedemptions   = df.filter(r => r.promo_code && r.promo_code !== '').length;\nconst promoDiscountValue = df.reduce((s,r)=> s + num(r.discount), 0);\nconst aov = ordersCount ? net / ordersCount : 0;\nconst itemsPerOrder = ordersCount ? (df.reduce((s,r)=> s + num(r.items_count), 0) / ordersCount) : 0;\n\n// --- mix (ช่องทาง, การจ่าย, เดลิเวอรี) ---\nconst sumBy = (arr, key, cond=()=>true) =>\n  arr.filter(cond).reduce((acc, r) => {\n    const k = r[key] || 'N/A';\n    acc[k] = (acc[k] || 0) + num(r.total);\n    return acc;\n  }, {});\n\nconst channelSales  = sumBy(df, 'channel');\nconst paymentSales  = sumBy(df, 'payment_method');\nconst deliverySales = sumBy(df, 'delivery_platform', r => r.channel === 'delivery');\n\n// --- by branch ---\nconst byBranch = {};\ndf.forEach(r => {\n  const bid = r.branch_id;\n  if (!byBranch[bid]) byBranch[bid] = { branch_id: bid, branch_name: r.branch_name, net_sales: 0, orders: 0 };\n  byBranch[bid].net_sales += num(r.total);\n  byBranch[bid].orders += 1;\n});\nObject.values(byBranch).forEach(b => b.aov = b.orders ? b.net_sales / b.orders : 0);\n\n// --- peak hour ---\nconst hourCount = {};\ndf.forEach(r => {\n  const h = String(r.order_time || '').split(':')[0] || '00';\n  hourCount[h] = (hourCount[h] || 0) + 1;\n});\nconst peak = Object.entries(hourCount).sort((a,b)=> b[1]-a[1])[0] || ['--', 0];\n\n// --- output payload ---\nreturn [{\n  reportDate,\n  kpi: {\n    gross_sales: gross,\n    net_sales: net,\n    orders: ordersCount,\n    customers,\n    aov,\n    items_per_order: itemsPerOrder,\n    refunds_count: refundsCount,\n    refunds_value: refundsValue,\n    promo_redemptions: promoRedemptions,\n    promo_discount_value: promoDiscountValue,\n  },\n  mix: {\n    channel_sales: channelSales,\n    payment_sales: paymentSales,\n    delivery_sales: deliverySales,\n  },\n  branch: Object.values(byBranch),\n  peak: { hour: peak[0], orders: peak[1] },\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        416
+      ],
+      "id": "8afdb2ad-92d0-4e53-8596-2d6d13a6baf8",
+      "name": "AnalyzeData"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * INPUT: $json.output = {\n *   exec_summary: string[],\n *   kpi: [{ gross_sales, net_sales, orders, customers, aov, items_per_order, refunds_count, refunds_value, promo_redemptions, promo_discount_value }],\n *   by_branch: [{ branch, net_sales, orders, aov, peak_hour }],\n *   mix: { channel_sales:{}, payment_sales:{}, delivery_sales:{} },\n *   top_items: [{ name, revenue }],\n *   alerts: string[]\n * }\n * OPTIONAL: $json.reportDate\n * OUTPUT: { subject, html }\n */\n\nconst out = $json.output ?? $json;         // กันเผื่อ LLM คืน object ตรง ๆ ไม่หุ้ม output\nconst reportDate = $json.reportDate || \"\"; // ส่งมาจากขั้น Aggregate ก็จะมี\n\n// -------- helpers ----------\nconst fmt = (n) => (typeof n === 'number' ? n.toLocaleString('en-US', {maximumFractionDigits: 2}) : (n ?? ''));\nconst esc = (s='') => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n\nconst rowsFromObj = (obj) =>\n  Object.entries(obj || {}).map(([k,v]) => `<tr><td>${esc(k)}</td><td style=\"text-align:right\">${esc(fmt(v))}</td></tr>`).join('');\n\nconst table = (headers, rows) => `\n  <table role=\"table\" style=\"border-collapse:collapse;width:100%;margin:8px 0 16px\">\n    <thead>\n      <tr>${headers.map(h=>`<th style=\"background:#f3f5f9;border:1px solid #e2e5ec;padding:8px 10px;text-align:left\">${esc(h)}</th>`).join('')}</tr>\n    </thead>\n    <tbody>\n      ${rows.map(r=>`<tr>${r.map((c,i)=>`<td style=\"border:1px solid #e2e5ec;padding:8px 10px;${i===r.length-1?'text-align:right':''}\">${esc(c)}</td>`).join('')}</tr>`).join('')}\n    </tbody>\n  </table>\n`;\n\n// -------- unpack --------\nconst execSummary = out.exec_summary ?? [];\nconst kpiObj = Array.isArray(out.kpi) ? (out.kpi[0] ?? {}) : (out.kpi ?? {});\nconst byBranch = out.by_branch ?? [];\nconst mix = out.mix ?? {};\nconst alerts = out.alerts ?? [];\n\n// -------- sections --------\nconst kpiTable = table(\n  ['Gross Sales','Net Sales','Orders','Customers','AOV','Items/Order','Refunds (count)','Refunds (฿)','Promo (count)','Promo (฿)'],\n  [[\n    fmt(kpiObj.gross_sales), fmt(kpiObj.net_sales), fmt(kpiObj.orders), fmt(kpiObj.customers),\n    fmt(kpiObj.aov), fmt(kpiObj.items_per_order), fmt(kpiObj.refunds_count),\n    fmt(kpiObj.refunds_value), fmt(kpiObj.promo_redemptions), fmt(kpiObj.promo_discount_value),\n  ]]\n);\n\nconst branchTable = table(\n  ['Branch','Net Sales (฿)','Orders','AOV (฿)','Peak Hour'],\n  byBranch.map(b => [b.branch, fmt(b.net_sales), fmt(b.orders), fmt(b.aov), b.peak_hour || ''])\n);\n\nconst channelTbl = mix.channel_sales ? table(['Channel','Sales (฿)'],\n  Object.entries(mix.channel_sales).map(([k,v])=>[k, fmt(v)])\n) : '';\n\nconst paymentTbl = mix.payment_sales ? table(['Payment','Sales (฿)'],\n  Object.entries(mix.payment_sales).map(([k,v])=>[k, fmt(v)])\n) : '';\n\nconst deliveryTbl = mix.delivery_sales ? table(['Delivery Platform','Sales (฿)'],\n  Object.entries(mix.delivery_sales).map(([k,v])=>[k, fmt(v)])\n) : '';\n\n// -------- build HTML --------\nconst html = `\n<!DOCTYPE html><html><head><meta charset=\"utf-8\">\n<title>Daily Sales Report ${reportDate ? '– '+esc(reportDate) : ''}</title></head>\n<body style=\"font-family:Arial,Helvetica,sans-serif;color:#222;line-height:1.55;margin:0;padding:24px;background:#f6f8fb\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:900px;margin:0 auto;background:#fff;border:1px solid #e8ebf3;border-radius:12px\">\n    <tr><td style=\"padding:20px 24px 8px 24px\">\n      <h2 style=\"margin:0 0 8px 0;font-size:20px\">สรุปยอดขายรายวัน — Sushi Peak ${reportDate ? '('+esc(reportDate)+')' : ''}</h2>\n      <div style=\"font-size:12px;color:#666\">อีเมลนี้สร้างโดยระบบอัตโนมัติ</div>\n    </td></tr>\n    <tr><td style=\"padding:8px 24px 24px 24px\">\n      <style>\n        h3{font-size:16px;margin:18px 0 8px}\n        ul{margin:8px 0 12px 20px}\n        th{font-weight:600}\n      </style>\n\n      <h3>1) Executive Summary</h3>\n      <ul>${execSummary.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>\n\n      <h3>2) KPI Snapshot</h3>\n      ${kpiTable}\n\n      <h3>3) By Branch</h3>\n      ${branchTable}\n\n      <h3>4) Channel / Payment / Delivery</h3>\n      ${channelTbl}${paymentTbl}${deliveryTbl}\n\n      <h3>5) Alerts &amp; Actions</h3>\n      <ul>${alerts.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>\n    </td></tr>\n  </table>\n</body></html>\n`;\n\nconst subject = `Daily Sales Report – ${reportDate || 'Today'}`;\n\nreturn [{ json: { subject, html } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        416
+      ],
+      "id": "f5cc4d5d-afa3-4f76-a22f-9c2232ff16ed",
+      "name": "SetHTMLforEmail"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6497b8fb-d1b7-4d95-aeef-cc09ef33801d",
+              "name": "SHEET_ID",
+              "value": "1hJB4j5jwGMtR0ZrjJ_EIihCrwAHADkOvs8kZbweUTy0",
+              "type": "string"
+            },
+            {
+              "id": "77567d5d-5dab-4edb-b846-4a94966c3a63",
+              "name": "TAB_ORDERS",
+              "value": "orders",
+              "type": "string"
+            },
+            {
+              "id": "8cc14727-ff71-4f26-a1fa-645af96eecb9",
+              "name": "LINE_TO",
+              "value": "<Your line user id>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -128,
+        416
+      ],
+      "id": "d480cdda-347f-4edb-8b2d-78b57ce5903e",
+      "name": "Setting"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 23,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -352,
+        608
+      ],
+      "id": "5fb74e94-e4c5-49a9-b600-df6f40f83db3",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Setting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "SetHTMLforEmail",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Push message to Line",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read_orders": {
+      "main": [
+        [
+          {
+            "node": "AnalyzeData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AnalyzeData": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SetHTMLforEmail": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Setting": {
+      "main": [
+        [
+          {
+            "node": "Read_orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Setting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4e4bf57d-de34-4148-a684-d9f1ccfbaf87",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2c12b0b552404dc07af67cd5f092afd21d18c808d4fdabdb04cb4b064195b6fb"
+  },
+  "id": "VHBOdd2qKsLfMj6c",
+  "tags": []
+}

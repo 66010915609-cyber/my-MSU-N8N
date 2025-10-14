@@ -1,0 +1,266 @@
+{
+  "name": "PosProject",
+  "nodes": [
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "6hoCP1rwTxqdcCVx",
+          "mode": "list",
+          "cachedResultName": "ยอดขาย",
+          "cachedResultUrl": "/projects/S78EV06h0DnjbZCA/datatables/6hoCP1rwTxqdcCVx"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        -272
+      ],
+      "id": "6a86fcbf-17ea-4b98-a4b8-54cb1407a970",
+      "name": "Insert row"
+    },
+    {
+      "parameters": {
+        "sendTo": "66010915590@msu.ac.th",
+        "subject": "=รายงานยอดขาย  {{ $json}}",
+        "message": "รายงานยอดขายประจำวัน",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        176,
+        -272
+      ],
+      "id": "cf65e4f9-1c2c-4268-b774-359d21c56e07",
+      "name": "Send a message",
+      "webhookId": "7ff610b6-677a-4631-a2c9-34c76e278386",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "52WjH1hvdSMOaDHW",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -608,
+        -336
+      ],
+      "id": "eb4a1007-5527-47e1-be3f-9c2c0988ed3f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        -384
+      ],
+      "id": "3f698676-e16f-4c51-b18b-bcca7db37747",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -656,
+        -96
+      ],
+      "id": "4052b213-9efd-4492-8dbc-9e3a5969944c",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "F1TTZl4owD6mgoFH",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -480,
+        -80
+      ],
+      "id": "9b12fb36-c8ce-47ed-b0af-3f6c7fa2dfbe",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "operation": "get"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -1056,
+        -416
+      ],
+      "id": "6a587802-1ebe-47af-8aa9-b0d16862fb23",
+      "name": "Get a message",
+      "webhookId": "4c40cc77-3d6d-4c42-8518-2dd8c7099b46",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ieoWNnE1ajsYtFKx",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -896,
+        -272
+      ],
+      "id": "540311b4-1998-4c9b-927d-dd3fb67d1516",
+      "name": "Get a file",
+      "webhookId": "918a7c80-9185-4aad-ba43-a0afbd857449",
+      "credentials": {
+        "telegramApi": {
+          "id": "2oXqqhupUg0bov0V",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.awsTextractTool",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        -32
+      ],
+      "id": "d716ea35-0209-4256-9dd7-200f05bb5099",
+      "name": "AWS Textract",
+      "credentials": {
+        "aws": {
+          "id": "krIoyjE1eYno0YfP",
+          "name": "AWS account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        []
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a message": {
+      "main": [
+        []
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AWS Textract": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9c50d667-3eff-4a29-9540-1851ddceea5b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6329af5e47d839411d4c7f27150ccfe905d839a301878201dfa1d4cbf4c683fd"
+  },
+  "id": "bVyfgPg86eFqQBXP",
+  "tags": []
+}
