@@ -1,0 +1,393 @@
+{
+  "name": "SushiPeak–Daily Sales AutoReport_JSONtemplate",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "channel_post",
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        48,
+        -128
+      ],
+      "id": "568a6eff-e078-4ce7-bfe7-18793d3f9ff8",
+      "name": "Telegram Trigger",
+      "webhookId": "45575b94-535b-4d41-9edf-b2acfec6a97d",
+      "alwaysOutputData": false,
+      "notesInFlow": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "826sLywLMKwYAs0N",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[2].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        256,
+        -128
+      ],
+      "id": "5ef5fa7f-4a98-4e1b-a359-ef8043c17c35",
+      "name": "Get a file",
+      "webhookId": "7093cd85-1479-486a-a9ee-b90ed994ac42",
+      "credentials": {
+        "telegramApi": {
+          "id": "826sLywLMKwYAs0N",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.ocr.space/parse/image",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "APIKey",
+              "value": "K86127959088957"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        464,
+        -128
+      ],
+      "id": "f0560dda-3997-4a95-a682-3c3236da2b1d",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n// ดึงข้อความจากผล OCR และแยกบรรทัด\nfor (const item of $input.all()) {\n  const result = item.json.ParsedResults?.[0]?.ParsedText || \"\";\n  \n  // แปลงเป็น array ของบรรทัด\n  const lines = result.split('\\n').map(line => line.trim()).filter(Boolean);\n  \n  // สร้าง object สำหรับเก็บผล\n  const summary = {\n    startingCash: 800,\n    cashSales: 1250,\n    refunds: 50,\n    cashInOut: null,\n    expectedTotal: null,\n    actualCash: null,\n    discrepancy: null,\n    totalBills: null\n  };\n  \n  // อ่านค่าจากข้อความ OCR ทีละบรรทัด\n  for (const line of lines) {\n    if (line.startsWith(\"Starting Cash\")) summary.startingCash = parseFloat(line.split(/\\s+/).pop());\n    if (line.startsWith(\"Cash Sales\")) summary.cashSales = parseFloat(line.split(/\\s+/).pop());\n    if (line.startsWith(\"Refunds\")) summary.refunds = parseFloat(line.split(/\\s+/).pop());\n    if (line.startsWith(\"Cash In/Out\")) summary.cashInOut = parseFloat(line.split(/\\s+/).pop());\n    if (line.startsWith(\"Expected Cash Total\")) summary.expectedTotal = parseFloat(line.split(/\\s+/).pop());\n    if (line.startsWith(\"Actual Cash in Drawer\")) summary.actualCash = parseFloat(line.split(/\\s+/).pop());\n    if (line.startsWith(\"Discrepancy\")) summary.discrepancy = parseFloat(line.split(/\\s+/).pop());\n    if (line.startsWith(\"Total Bills\")) summary.totalBills = parseInt(line.split(/\\s+/).pop());\n  }\n\n  item.json.salesSummary = summary;\n}\n\nreturn $input.all();\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        -304
+      ],
+      "id": "fa3fb757-0db2-4fe5-a486-326465ec0930",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[2].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1136,
+        -128
+      ],
+      "id": "3fc422c7-ee71-4f0f-abf4-2f175f313f4d",
+      "name": "Get a file1",
+      "webhookId": "e2bbe617-12ae-4396-b2ce-847c8f7b4fba",
+      "credentials": {
+        "telegramApi": {
+          "id": "826sLywLMKwYAs0N",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();\n// Loop through all input items\nfor (const item of $input.all()) {\n  // ดึงข้อความ OCR (จาก OCR.Space)\n  const text = item.json.ParsedResults?.[0]?.ParsedText || \"\";\n\n  // แยกบรรทัด + ตัดช่องว่าง + กรองบรรทัดว่าง\n  const lines = text.split(/\\r?\\n/).map(line => line.trim()).filter(Boolean);\n\n  // เตรียม object สำหรับเก็บผลลัพธ์\n  const summary = {\n    startingCash: Number,\n    cashSales: Number,\n    refunds: Number,\n    cashInOut: Number,\n    expectedTotal: null,\n    actualCash: null,\n    discrepancy: null,\n    totalBills: null\n  };\n\n  /**\n   * ฟังก์ชันช่วยดึงตัวเลขจากบรรทัด (รองรับ comma, decimal, และเครื่องหมายลบ)\n   */\n  const extractNumberRevised = line => {\n    // Regex: ค้นหาสตริงตัวเลขที่อาจมีเครื่องหมายลบ/บวกนำหน้า, มีจุลภาค, มีจุดทศนิยม \n    // และอยู่ท้ายบรรทัด (ก่อนช่องว่างหรือจบคำ)\n    const match = line.match(/[-+]?\\s*(\\d{1,3}(,\\d{3})*|\\d+)(\\.\\d{2})?\\s*$/); \n    \n    if (!match) {\n        // ลองหาแค่ตัวเลขจำนวนเต็มที่อาจไม่มีจุดทศนิยม เช่น 60\n        const simpleMatch = line.match(/[-+]?\\s*(\\d{1,3}(,\\d{3})*|\\d+)\\s*$/);\n        if (simpleMatch) {\n            const numStr = simpleMatch[0].replace(/,/g, '').trim();\n             // ถ้าเป็น Total Bills ให้เป็นจำนวนเต็ม\n            if (/Total\\s*Bills/i.test(line)) {\n                return parseInt(numStr);\n            }\n            return parseFloat(numStr);\n        }\n        return null;\n    }\n    \n    const numStr = match[0].replace(/,/g, '').trim();\n\n    // ถ้าเป็น Total Bills ให้เป็นจำนวนเต็ม\n    if (/Total\\s*Bills/i.test(line)) {\n        return parseInt(numStr);\n    }\n    \n    return parseFloat(numStr);\n  };\n\n\n  // วนลูปหาค่าจากบรรทัด OCR โดยใช้ Regular Expression ที่ยืดหยุ่น\n  for (const line of lines) {\n    if (/Starting\\s*Cash/i.test(line)) {\n      summary.startingCash = extractNumberRevised(line);\n    }\n    else if (/Cash\\s*Sales/i.test(line)) {\n      summary.cashSales = extractNumberRevised(line);\n    }\n    // ใช้ !/Sales/i.test(line) เพื่อให้แน่ใจว่าเป็น Refunds และไม่ใช่ Cash Sales\n    else if (/Refunds?/i.test(line) && !/Sales/i.test(line)) { \n      summary.refunds = extractNumberRevised(line);\n    }\n    else if (/Cash\\s*In\\/?Out/i.test(line)) {\n      summary.cashInOut = extractNumberRevised(line);\n    }\n    else if (/Expected\\s*Cash\\s*Total/i.test(line)) {\n      summary.expectedTotal = extractNumberRevised(line);\n    }\n    else if (/Actual\\s*Cash\\s*in\\s*Drawer/i.test(line) || /Actual\\s*Cash/i.test(line)) {\n      summary.actualCash = extractNumberRevised(line);\n    }\n    else if (/Discrepancy/i.test(line)) {\n      summary.discrepancy = extractNumberRevised(line);\n    }\n    // extractNumberRevised จะจัดการแปลงเป็น Integer ให้เอง\n    else if (/Total\\s*Bills?/i.test(line)) {\n      summary.totalBills = extractNumberRevised(line);\n    }\n  }\n\n  // เพิ่มค่า summary เข้าใน JSON เพื่อส่งต่อ\n  item.json.salesSummary = summary;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -128
+      ],
+      "id": "076631dd-a19f-402c-b091-ca17e8c9f1f3",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        880,
+        -128
+      ],
+      "id": "bb37eacc-8a29-4bc6-9f75-9cc46c824248",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "fileId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        64,
+        112
+      ],
+      "id": "41309e71-cb63-47be-9b8c-51950b54bc99",
+      "name": "Update file"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        112
+      ],
+      "id": "e205b2a2-70a3-4d3b-90d6-00c9277238bf",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        112
+      ],
+      "id": "a93b344c-7681-49ff-b1ba-fd65a5206d5f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        256
+      ],
+      "id": "06b521a8-682e-4057-8c4d-72f663a4f4a3",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Mk8LkJRWsCQtG78N",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        544,
+        368
+      ],
+      "id": "681fcbd8-b093-4917-bae8-69618ccb1507",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        832,
+        112
+      ],
+      "id": "9c0e9712-6295-41c5-a670-7d2ea661b01a",
+      "name": "Send a text message",
+      "webhookId": "7a116d08-5d90-464b-9c71-84ffc06f5f1c",
+      "credentials": {
+        "telegramApi": {
+          "id": "826sLywLMKwYAs0N",
+          "name": "Telegram account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Get a file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file1": {
+      "main": [
+        [
+          {
+            "node": "Update file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update file": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "36045782-b55b-4c12-8e76-d9e854458cf4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6329af5e47d839411d4c7f27150ccfe905d839a301878201dfa1d4cbf4c683fd"
+  },
+  "id": "OTVK02c0aEMufX21",
+  "tags": []
+}
