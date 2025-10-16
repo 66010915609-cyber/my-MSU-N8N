@@ -1,0 +1,464 @@
+{
+  "name": "อันใหม่ล่าสุด",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -400,
+        -64
+      ],
+      "id": "17c33f57-6ced-4fb1-8dbd-28803ec3f8dc",
+      "name": "Telegram Trigger",
+      "webhookId": "d36164b9-650c-4ccb-aaf9-9dd25fe72e94",
+      "credentials": {
+        "telegramApi": {
+          "id": "sdtBgfKVDl9J87v5",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[2].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -208,
+        -64
+      ],
+      "id": "e7c13c0a-748f-4958-ae72-da56b4c758d3",
+      "name": "Get a file",
+      "webhookId": "77ffe1a4-4bdf-48aa-a31e-78e7c0884edb",
+      "credentials": {
+        "telegramApi": {
+          "id": "sdtBgfKVDl9J87v5",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.ocr.space/parse/image",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "ApiKey",
+              "value": "K86127959088957"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "File",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        -64
+      ],
+      "id": "26c9e4fb-7ec4-4f54-a455-177a23682026",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1DFDqMGMnDzexlHfBtdqtigq1XgnCcJmThSSWm4lWiok",
+          "mode": "list",
+          "cachedResultName": "ใบเสร็จ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DFDqMGMnDzexlHfBtdqtigq1XgnCcJmThSSWm4lWiok/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DFDqMGMnDzexlHfBtdqtigq1XgnCcJmThSSWm4lWiok/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Starting Cash": "={{ $json['Starting Cash'] }}",
+            "Cash Sales": "={{ $json['Cash Sales'] }}",
+            "Refunds": "={{ $json.Refunds }}",
+            "Cash In/Out": "={{ $json['Cash In/Out'] }}",
+            "Expected Cash Total": "={{ $json['Expected Cash Total'] }}",
+            "Actual Cash in Drawer": "={{ $json['Actual Cash in Drawer'] }}",
+            "Discrepancy": "={{ $json.Discrepancy }}",
+            "Total Bills": "={{ $json['Total Bills'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Starting Cash",
+              "displayName": "Starting Cash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cash Sales",
+              "displayName": "Cash Sales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Refunds",
+              "displayName": "Refunds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cash In/Out",
+              "displayName": "Cash In/Out",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Expected Cash Total",
+              "displayName": "Expected Cash Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Actual Cash in Drawer",
+              "displayName": "Actual Cash in Drawer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Discrepancy",
+              "displayName": "Discrepancy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total Bills",
+              "displayName": "Total Bills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        400,
+        -64
+      ],
+      "id": "0fe99635-b5b2-40e4-ad3e-e352bbe29f01",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "AjjlBQQb2lxMPfpb",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- โค้ดเวอร์ชันสุดท้าย: จัดการกับ OCR ที่แยก Key กับ Value ---\n\n// รับข้อความดิบจาก OCR\nconst ocrText = $input.item.json.ParsedResults[0].ParsedText;\n\n// 1. แบ่งข้อความเป็นบรรทัด และคัดกรองบรรทัดว่างกับหัวข้อ \"SALES ROUND\" ทิ้งไป\nconst allLines = ocrText.split(/\\r?\\n/).filter(line => line.trim() !== \"\" && line.trim() !== \"SALES ROUND\");\n\n// 2. แบ่งครึ่ง Array: ครึ่งแรกคือ \"ชื่อรายการ\" (Keys), ครึ่งหลังคือ \"ตัวเลข\" (Values)\nconst midpoint = Math.ceil(allLines.length / 2);\nconst keys = allLines.slice(0, midpoint);\nconst values = allLines.slice(midpoint);\n\n// สร้าง Object ว่างเพื่อเตรียมเก็บข้อมูล\nconst newData = {};\n\nconsole.log(\"--- เริ่มทำการจับคู่ข้อมูล ---\");\n\n// 3. วนลูปเพื่อจับคู่ Key กับ Value ตามลำดับ\nfor (let i = 0; i < keys.length; i++) {\n  const key = keys[i].trim();\n  let rawValue = values[i] ? values[i].trim() : '0';\n\n  // 4. ทำความสะอาดข้อมูลตัวเลขที่ OCR อ่านผิดเพี้ยน\n  // เช่น \"50. ee\" -> \"50.00\", \"2, eee. ee\" -> \"2000.00\", \"6e\" -> \"60\"\n  let cleanedValue = rawValue\n    .replace(/, /g, '')\n    .replace(/ /g, '')\n    .replace(/eee/g, '000')\n    .replace(/ee/g, '00')\n    .replace(/e/g, '0');\n\n  // แปลงข้อความที่สะอาดแล้วให้เป็นตัวเลขทศนิยม\n  const numericValue = parseFloat(cleanedValue);\n\n  // เก็บข้อมูลที่สมบูรณ์ลงใน Object\n  newData[key] = numericValue;\n  console.log(`จับคู่: '${key}' กับค่า '${rawValue}' (แปลงเป็น -> ${numericValue})`);\n}\n\nconsole.log(\"--- ข้อมูลสุดท้ายที่ได้ ---\");\nconsole.log(newData);\n\n\n// ส่งออกข้อมูลสุดท้าย\nreturn [{\n  json: newData\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        -64
+      ],
+      "id": "bb4d5c74-5c77-4909-b99c-0879a9d22af9",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger').item.json.message.photo[2].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -416,
+        128
+      ],
+      "id": "5d8140bd-9e75-4581-bb63-9c7857a972e4",
+      "name": "Get a file1",
+      "webhookId": "ba4f0f57-d90f-4474-9def-0240144b7f30",
+      "credentials": {
+        "telegramApi": {
+          "id": "sdtBgfKVDl9J87v5",
+          "name": "Telegram account 2"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "88d29316-2ce0-43b4-b77e-275cf6e89fdc",
+              "name": "สรุปยอด",
+              "value": "={{ $('HTTP Request').item.json.ParsedResults[0].ParsedText }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -208,
+        128
+      ],
+      "id": "4358d6b5-510b-4724-aa0d-341836bff576",
+      "name": "Edit Fields",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=\n{{ $json['สรุปยอด'] }}\n",
+        "options": {
+          "systemMessage": "คุณคือผู้ช่วยจัดการร้านค้ามืออาชีพ หน้าที่ของคุณคือสรุปยอดขายรายวันจากข้อมูลที่ได้รับให้กระชับและเข้าใจง่ายสำหรับส่งรายงานทาง Telegram\n\nจากข้อมูลยอดขายต่อไปนี้:\n- ยอดขายเงินสด: {{ $('Code in JavaScript').item.json['Cash Sales'] }} บาท\n- ยอดคืนเงิน: {{ $('Code in JavaScript').item.json.Refunds }} บาท\n- ยอดเงินสดในลิ้นชัก: {{ $('Code in JavaScript').item.json['Actual Cash in Drawer'] }} บาท\n- ผลต่าง: {{ $('Code in JavaScript').item.json.Discrepancy }} บาท\n\nโปรดสรุปรายงานตามรูปแบบนี้เท่านั้น:\n\n✅ สรุปยอดขายปิดรอบ:\n- ยอดขาย: [ยอดขายเงินสด] บาท\n- คืนเงิน: [ยอดคืนเงิน] บาท\n- เงินสดจริง: [ยอดเงินสดในลิ้นชัก] บาท\n- ผลต่าง: [ผลต่าง] บาท\n\nข้อสำคัญ: หากค่า 'ผลต่าง' (Discrepancy) ไม่ใช่ 0 ให้เพิ่มอีโมจิ ⚠️ ไว้ข้างหน้าบรรทัด 'ผลต่าง' ด้วย"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        576,
+        -64
+      ],
+      "id": "43a7a065-95ec-4060-95f8-1dbaf2e9f267",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        288
+      ],
+      "id": "6693f965-1b8c-4446-a182-63a450e0fd4b",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "7LF9yqFZbr5Khpsl",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        624,
+        288
+      ],
+      "id": "bc02540f-1dcd-427b-97aa-bb20077943dc",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $('AI Agent').item.json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        -64
+      ],
+      "id": "ba212d00-760c-4f1f-b280-9e2c0b7e32b2",
+      "name": "Send a text message",
+      "webhookId": "219ba9bd-5720-45f8-9e76-f2a3e22fd818",
+      "credentials": {
+        "telegramApi": {
+          "id": "sdtBgfKVDl9J87v5",
+          "name": "Telegram account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        []
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "53a36bf9-0b2d-4e1b-bb5e-b48a8047d21b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6329af5e47d839411d4c7f27150ccfe905d839a301878201dfa1d4cbf4c683fd"
+  },
+  "id": "oeKizVKoUfmjAWAy",
+  "tags": []
+}
