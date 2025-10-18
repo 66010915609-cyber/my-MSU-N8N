@@ -1,0 +1,696 @@
+{
+  "name": "Dream2mill (Sheets+Merge)",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "id": "6ab4bd60-3a0e-472c-a13a-65b501e9d54e",
+      "name": "Telegram Trigger (download)",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1488,
+        32
+      ],
+      "webhookId": "80011441-b126-4a29-ba0d-21d3d06ab6b1",
+      "credentials": {
+        "telegramApi": {
+          "id": "DImlqfTkbHG6KuUm",
+          "name": "Dream2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "chatId",
+              "value": "={{$json.chat?.id || $json.message?.chat?.id || $json.channel_post?.chat?.id}}"
+            },
+            {
+              "name": "text",
+              "value": "={{$json[\"message\"]?.[\"text\"] || $json[\"channel_post\"]?.[\"text\"] || \"\"}}"
+            },
+            {
+              "name": "caption",
+              "value": "={{$json[\"message\"]?.[\"caption\"] || $json[\"channel_post\"]?.[\"caption\"] || \"\"}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4a87e169-b42b-42af-9de5-6a042d06a3c9",
+      "name": "Set: Base",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        -1296,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "collection": [
+            {
+              "mode": "binaryKeyExists",
+              "property": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "11559ce4-1e81-4abb-9280-f4ad90d95526",
+      "name": "IF: Has Image?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1088,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.ocr.space/parse/image",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "K85107468888957"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "isTable",
+              "value": "true"
+            },
+            {
+              "name": "scale",
+              "value": "true"
+            },
+            {
+              "name": "detectOrientation",
+              "value": "true"
+            },
+            {
+              "name": "OCREngine",
+              "value": "2"
+            },
+            {
+              "name": "language",
+              "value": "tha"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e29ca93a-280d-42b7-83ea-cd194bb7f167",
+      "name": "HTTP Request: OCR.Space",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -912,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "chatId",
+              "value": "={{$node[\"Set: Base\"].json.chatId}}"
+            },
+            {
+              "name": "text",
+              "value": "={{$node[\"Set: Base\"].json.text}}"
+            },
+            {
+              "name": "caption",
+              "value": "={{$node[\"Set: Base\"].json.caption}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "af2d380b-5a16-4c7c-9bf8-62dbdc1441b8",
+      "name": "Set: Carry Base",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// === Code: Parse Bill (v1.115.2 safe, ALWAYS returns array) ===\nconst out = [];\nconst items = $input.all();\nconst base = items.length ? (items[0].json || {}) : {};\nconst chatId =\n  base.chatId ||\n  base?.message?.chat?.id ||\n  base?.channel_post?.chat?.id ||\n  base?.chat?.id;\n\nif (!chatId) {\n  return [{ json: { ok: false, chatId: null, replyText: '⚠️ ไม่พบ chat_id ผู้รับข้อความ' } }];\n}\n\nconst thaiDigits = '๐๑๒๓๔๕๖๗๘๙';\nconst rep = (s) => String(s || '').replace(/[๐-๙]/g, c => String(thaiDigits.indexOf(c)));\n\nlet ocrText = '';\nfor (const it of items) {\n  const j = it.json || {};\n  if (j?.ParsedResults?.[0]) {\n    ocrText = j.ParsedResults[0].ParsedText || '';\n    if (!ocrText && j.ParsedResults[0]?.TextOverlay?.Lines?.length) {\n      ocrText = j.ParsedResults[0].TextOverlay.Lines.map(l => l.LineText).filter(Boolean).join('\\n');\n    }\n    break;\n  }\n}\n\nconst merged = [base.text || '', base.caption || '', String(ocrText || '').trim()]\n  .filter(Boolean).join('\\n');\nconst raw = rep(merged).replace(/\\u00A0/g, ' ').trim();\n\nif (!raw) {\n  return [{ json: { ok: false, chatId, replyText: '⚠️ ไม่พบข้อความหรือภาพบิล กรุณาส่งใหม่' } }];\n}\n\nconst t = raw.toLowerCase();\nconst num = (s) => Number(String(s || '').replace(/[^\\d.]/g, '')) || 0;\n\nconst dm = t.match(/(\\d{1,2}[\\/\\-]\\d{1,2}[\\/\\-]\\d{2,4}|\\d{4}[\\/\\-]\\d{1,2}[\\/\\-]\\d{1,2})/);\nconst dateText = dm ? dm[1] : null;\n\nconst bm = t.match(/ส[าา]ข[าา]\\s*[:\\-]?\\s*([a-z0-9ก-๙ \\-_\\/]+)/i);\nconst branch = bm ? bm[1].trim().split(/\\s+/)[0] : null;\n\nlet total = 0, cash = 0, transfer = 0, delivery = 0, m;\nconst tm = t.match(/(ยอดรวม|รวมทั้งสิ้น|total)\\s*[:\\-]?\\s*([0-9,\\.]+)/i); if (tm) total = num(tm[2]);\nm = t.match(/(เงินสด|cash)\\s*[:\\-]?\\s*([0-9,\\.]+)/i); if (m) cash = num(m[2]);\nm = t.match(/(โอน|transfer)\\s*[:\\-]?\\s*([0-9,\\.]+)/i); if (m) transfer = num(m[2]);\nm = t.match(/(เดลิเวอรี|delivery|app|grab|foodpanda)\\s*[:\\-]?\\s*([0-9,\\.]+)/i); if (m) delivery = num(m[2]);\nif (!total && (cash + transfer + delivery) > 0) total = cash + transfer + delivery;\n\nconst toISO = (s) => {\n  if (!s) return null;\n  let d;\n  if (/^\\d{4}/.test(s)) d = new Date(s.replace(/-/g, '/'));\n  else {\n    const p = s.replace(/-/g, '/').split('/');\n    if (p.length === 3) {\n      let [dd, mm, yy] = p;\n      if (yy.length === 2) yy = String(2000 + Number(yy));\n      d = new Date(`${yy}/${mm}/${dd}`);\n    }\n  }\n  if (!d || isNaN(d)) return null;\n  const pad = (n) => String(n).padStart(2, '0');\n  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;\n};\nconst dateISO = toISO(dateText);\n\nif (!dateISO || !branch || total <= 0) {\n  const miss = [];\n  if (!dateISO) miss.push('วันที่');\n  if (!branch) miss.push('สาขา');\n  if (total <= 0) miss.push('ยอดรวม');\n  const msg = `อ่านข้อมูลไม่ครบ (${miss.join(', ')})\\nโปรดใช้ฟอร์ม เช่น:\\nสาขา: A1\\nวันที่: 17/10/2025\\nเงินสด: 6000\\nโอน: 5540\\nเดลิเวอรี: 1000\\nรวมทั้งสิ้น: 12540`;\n  return [{ json: { ok: false, chatId, replyText: msg } }];\n}\n\nout.push({\n  json: {\n    ok: true,\n    chatId,\n    dateISO,\n    branch: String(branch).toUpperCase(),\n    total,\n    cash,\n    transfer,\n    delivery\n  }\n});\nreturn out;"
+      },
+      "id": "25d41996-892d-4483-b591-3b2e51e01640",
+      "name": "Code: Parse Bill",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"ok\"]}}",
+              "operation": "isTrue"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a782e39e-7fd6-4e4b-9a6a-069ed9a17647",
+      "name": "IF: Parse OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1hw585LTUMVAgHerPGeyhZaxMJQTrYaL9lukCbtZSdr4",
+          "mode": "list",
+          "cachedResultName": "DreamShop_Template",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hw585LTUMVAgHerPGeyhZaxMJQTrYaL9lukCbtZSdr4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1246469722,
+          "mode": "list",
+          "cachedResultName": "RawBills",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hw585LTUMVAgHerPGeyhZaxMJQTrYaL9lukCbtZSdr4/edit#gid=1246469722"
+        },
+        "options": {}
+      },
+      "id": "a7e5c5c0-9d87-4e55-8231-922d381e718b",
+      "name": "Google Sheets: Get Rows (RawBills)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -144,
+        -128
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oNBD0XJ6ylWe0AEY",
+          "name": "MqMsu"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "8e0cef13-46eb-4982-920b-90812ebcb376",
+      "name": "Merge: Wait",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        32,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// === Code: Decide & Build (with branch name check) ===\n// input 0: parsed bill (จาก Parse Bill)\n// input 1: rows from Google Sheets (RawBills)\n\nconst in0 = $input.all(0);\nconst parsed = in0.length ? in0[0].json : {};\nconst rowsRaw = $input.all(1).map(i => i.json);\n\nconst chatId  = parsed.chatId;\nconst dateISO = parsed.dateISO;\nconst branch  = String(parsed.branch || '').toUpperCase();\n\n// ✅ สาขาที่ต้องการล็อก\nconst ALL_BRANCHES = ['AAA', 'BBB', 'CCC'];\n\nconst toNum = v => Number(String(v ?? '').replace(/[^\\d.]/g, '')) || 0;\n\n// ป้องกัน input ว่าง\nif (!chatId || !dateISO || !branch) {\n  return [{ json: { chatId, replyText: '⚠️ ข้อมูลไม่สมบูรณ์' } }];\n}\n\n// normalize ข้อมูลจากชีท\nconst rows = rowsRaw.map(r => ({\n  Date: String(r.Date || '').trim(),\n  Branch: String(r.Branch || '').toUpperCase().trim(),\n  Total: toNum(r.Total),\n  Cash: toNum(r.Cash),\n  Transfer: toNum(r.Transfer),\n  Delivery: toNum(r.Delivery),\n}));\n\n// filter เฉพาะวันที่เดียวกัน\nconst todayRows = rows.filter(r => r.Date === dateISO);\n\n// ตรวจซ้ำ (สาขาเดิมในวันเดียวกัน)\nconst isDup = todayRows.some(r => r.Branch === branch);\n\n// เตรียมข้อมูลบิลใหม่\nconst newRow = {\n  Date: dateISO, Branch: branch,\n  Total: toNum(parsed.total),\n  Cash: toNum(parsed.cash),\n  Transfer: toNum(parsed.transfer),\n  Delivery: toNum(parsed.delivery),\n};\n\n// รวมข้อมูล (เพิ่มเข้า dataset ถ้ายังไม่ซ้ำ)\nconst dataset = !isDup ? [...todayRows, newRow] : todayRows;\n\n// หาว่าสาขาไหนส่งแล้ว\nconst sentBranches = new Set(dataset.map(r => r.Branch));\n\n// ✅ หาสาขาที่ยังไม่ส่ง\nconst missingBranches = ALL_BRANCHES.filter(b => !sentBranches.has(b));\n\n// รวมยอด\nconst sum = k => dataset.reduce((a, r) => a + toNum(r[k]), 0);\nconst T = sum('Total'), C = sum('Cash'), TR = sum('Transfer'), D = sum('Delivery');\n\n// สร้างข้อความตอบกลับ\nconst listLines = dataset\n  .sort((a, b) => a.Branch.localeCompare(b.Branch))\n  .map(r => `• ${r.Branch}: ${r.Total.toLocaleString()} (สด ${r.Cash.toLocaleString()}, โอน ${r.Transfer.toLocaleString()}, เดลิเวอรี ${r.Delivery.toLocaleString()})`);\n\nlet replyText = '';\nif (missingBranches.length > 0) {\n  replyText = [\n    `รับบิลสาขา ${branch} ของวันที่ ${dateISO} แล้ว`,\n    ...listLines,\n    '—',\n    `ยังขาดบิลจากสาขา: ${missingBranches.join(', ')}`\n  ].join('\\n');\n} else {\n  replyText = [\n    `✅ สรุปยอดรายวัน (${dateISO})`,\n    ...listLines,\n    '—',\n    `รวมทั้ง 3 สาขา: ${T.toLocaleString()}`,\n    `(สด ${C.toLocaleString()}, โอน ${TR.toLocaleString()}, เดลิเวอรี ${D.toLocaleString()})`\n  ].join('\\n');\n}\n\n// สถานะการบันทึก\nconst writeBill = !isDup;\nconst writeDaily = missingBranches.length === 0;\n\nreturn [{\n  json: {\n    chatId,\n    replyText,\n    writeBill,\n    writeDaily,\n    Date: dateISO,\n    Branch: branch,\n    Total: newRow.Total,\n    Cash: newRow.Cash,\n    Transfer: newRow.Transfer,\n    Delivery: newRow.Delivery,\n    summaryDate: dateISO,\n    total: T,\n    cash: C,\n    transfer: TR,\n    delivery: D,\n  }\n}];\n"
+      },
+      "id": "3f5c0b85-312c-4a47-85e4-6593996cd5c6",
+      "name": "Code: Decide & Build",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"writeBill\"]}}",
+              "operation": "isTrue"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a20510e8-28d2-4ee8-8f25-065da3d05b60",
+      "name": "IF: Need Append Bill?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        32,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1hw585LTUMVAgHerPGeyhZaxMJQTrYaL9lukCbtZSdr4",
+          "mode": "list",
+          "cachedResultName": "DreamShop_Template",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hw585LTUMVAgHerPGeyhZaxMJQTrYaL9lukCbtZSdr4/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1246469722,
+          "mode": "list",
+          "cachedResultName": "RawBills",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hw585LTUMVAgHerPGeyhZaxMJQTrYaL9lukCbtZSdr4/edit#gid=1246469722"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{$json[\"Date\"]}}",
+            "Branch": "={{$json[\"Branch\"]}}",
+            "Total": "={{$json[\"Total\"]}}",
+            "Cash": "={{$json[\"Cash\"]}}",
+            "Transfer": "={{$json[\"Transfer\"]}}",
+            "Delivery": "={{$json[\"Delivery\"]}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Branch",
+              "displayName": "Branch",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total",
+              "displayName": "Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cash",
+              "displayName": "Cash",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Transfer",
+              "displayName": "Transfer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Delivery",
+              "displayName": "Delivery",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "466322a7-0f2b-43d6-9505-806769f3f031",
+      "name": "Google Sheets: Append Bill (RawBills)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        496,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oNBD0XJ6ylWe0AEY",
+          "name": "MqMsu"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"writeDaily\"]}}",
+              "operation": "isTrue"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "714762e6-3a59-4965-936f-8208e20a577f",
+      "name": "IF: Need DailySummary?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        512,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1hw585LTUMVAgHerPGeyhZaxMJQTrYaL9lukCbtZSdr4",
+          "mode": "list",
+          "cachedResultName": "DreamShop_Template",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hw585LTUMVAgHerPGeyhZaxMJQTrYaL9lukCbtZSdr4/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 74193291,
+          "mode": "list",
+          "cachedResultName": "DailySummary",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hw585LTUMVAgHerPGeyhZaxMJQTrYaL9lukCbtZSdr4/edit#gid=74193291"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{$json[\"summaryDate\"]}}",
+            "Total": "={{$json[\"total\"]}}",
+            "Cash": "={{$json[\"cash\"]}}",
+            "Transfer": "={{$json[\"transfer\"]}}",
+            "Delivery": "={{$json[\"delivery\"]}}"
+          }
+        },
+        "options": {}
+      },
+      "id": "3b0addc8-64bb-4fbe-96e2-a570c93cacbf",
+      "name": "Google Sheets: Append DailySummary",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        256,
+        288
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "oNBD0XJ6ylWe0AEY",
+          "name": "MqMsu"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json[\"chatId\"]}}",
+        "text": "={{$json[\"replyText\"]}}",
+        "additionalFields": {}
+      },
+      "id": "81e64c83-eef5-4987-a2ea-82c0860abbcb",
+      "name": "Telegram: Send Summary",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        288,
+        -416
+      ],
+      "webhookId": "9726bb27-9e2e-424a-b47b-8f394cfee1a8",
+      "credentials": {
+        "telegramApi": {
+          "id": "DImlqfTkbHG6KuUm",
+          "name": "Dream2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json[\"chatId\"]}}",
+        "text": "={{$json[\"replyText\"] || $json[\"error\"] || 'เกิดข้อผิดพลาด'}}",
+        "additionalFields": {}
+      },
+      "id": "cc16bbe6-ae61-406c-8256-bf81db11fc83",
+      "name": "Telegram: Send Error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        112
+      ],
+      "webhookId": "0831da25-a010-4ca7-a1e6-926c65bd89f8",
+      "credentials": {
+        "telegramApi": {
+          "id": "DImlqfTkbHG6KuUm",
+          "name": "Dream2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8231009688",
+        "text": "={{$json[\"replyText\"]}}",
+        "additionalFields": {}
+      },
+      "id": "c6266301-c55c-42b9-be3a-5ab5303a9f4e",
+      "name": "Telegram: Send Summary1",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        624,
+        -160
+      ],
+      "webhookId": "9726bb27-9e2e-424a-b47b-8f394cfee1a8",
+      "credentials": {
+        "telegramApi": {
+          "id": "DImlqfTkbHG6KuUm",
+          "name": "Dream2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger (download)": {
+      "main": [
+        [
+          {
+            "node": "Set: Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set: Base": {
+      "main": [
+        [
+          {
+            "node": "IF: Has Image?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Has Image?": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request: OCR.Space",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Parse Bill",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request: OCR.Space": {
+      "main": [
+        [
+          {
+            "node": "Set: Carry Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set: Carry Base": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse Bill",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse Bill": {
+      "main": [
+        [
+          {
+            "node": "IF: Parse OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Parse OK?": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Get Rows (RawBills)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge: Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram: Send Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Get Rows (RawBills)": {
+      "main": [
+        [
+          {
+            "node": "Merge: Wait",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge: Wait": {
+      "main": [
+        [
+          {
+            "node": "Code: Decide & Build",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Decide & Build": {
+      "main": [
+        [
+          {
+            "node": "IF: Need Append Bill?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF: Need DailySummary?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Telegram: Send Summary1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Need Append Bill?": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Append Bill (RawBills)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: Need DailySummary?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Need DailySummary?": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Append DailySummary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "086a68e9-161a-48dc-a51a-a2000a5f01be",
+  "meta": {
+    "instanceId": "6329af5e47d839411d4c7f27150ccfe905d839a301878201dfa1d4cbf4c683fd"
+  },
+  "id": "vJO26r8u6DN0OZ0L",
+  "tags": []
+}
